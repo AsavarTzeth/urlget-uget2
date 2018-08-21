@@ -1277,81 +1277,81 @@ static GtkWidget*  create_file_chooser (GtkWindow* parent,
                                         const gchar* filter_name,
                                         const gchar* mine_type)
 {
-	GtkWidget*      dialog;
-	GtkFileFilter*  filter;
+	GtkFileChooserNative*  native;
+	GtkFileFilter*         filter;
 
-	dialog = gtk_file_chooser_dialog_new (title,
+	native = gtk_file_chooser_native_new (title,
 			parent,
 			action,
-			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-			GTK_STOCK_OK,     GTK_RESPONSE_OK,
-			NULL);
-	gtk_window_set_destroy_with_parent ((GtkWindow*) dialog, TRUE);
+			GTK_STOCK_OK,
+			GTK_STOCK_CANCEL);
 
 	if (filter_name) {
 		filter = gtk_file_filter_new ();
 		gtk_file_filter_set_name (filter, filter_name);
 		gtk_file_filter_add_mime_type (filter, mine_type);
-		gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (dialog), filter);
+		gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (native), filter);
 	}
-	return dialog;
+	return native;
 }
 
-static void  on_create_torrent_response (GtkWidget* dialog, gint response, UgtkApp* app)
+static void  on_create_torrent_response (GtkWidget* native, gint response, UgtkApp* app)
 {
 	gchar*  file;
 
-	if (response != GTK_RESPONSE_OK ) {
-		gtk_widget_destroy (dialog);
+	if (response != GTK_RESPONSE_ACCEPT ) {
+		g_object_unref (native);
 		return;
 	}
 	// get filename
-	file = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
-//	file = gtk_file_chooser_get_uri (GTK_FILE_CHOOSER (dialog));
-	gtk_widget_destroy (dialog);
+	file = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (native));
+//	file = gtk_file_chooser_get_uri (GTK_FILE_CHOOSER (native));
+	g_object_unref (native);
 	ugtk_app_create_download (app, _("New Torrent"), file);
 	g_free (file);
 }
 
-static void  on_create_metalink_response (GtkWidget* dialog, gint response, UgtkApp* app)
+static void  on_create_metalink_response (GtkWidget* native, gint response, UgtkApp* app)
 {
 	gchar*  file;
 
-	if (response != GTK_RESPONSE_OK) {
-		gtk_widget_destroy (dialog);
+	if (response != GTK_RESPONSE_ACCEPT) {
+		g_object_unref (native);
 		return;
 	}
 	// get filename
-	file = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
-//	file = gtk_file_chooser_get_uri (GTK_FILE_CHOOSER (dialog));
-	gtk_widget_destroy (dialog);
+	file = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (native));
+//	file = gtk_file_chooser_get_uri (GTK_FILE_CHOOSER (native));
+	g_object_unref (native);
 	ugtk_app_create_download (app, _("New Metalink"), file);
 	g_free (file);
 }
 
 void  ugtk_app_create_torrent (UgtkApp* app)
 {
-	GtkWidget*  dialog;
+	GtkWidget*  native;
 	gchar*      title;
+	gint        res;
 
 	title = g_strconcat (UGTK_APP_NAME " - ", _("Open Torrent file"), NULL);
-	dialog = create_file_chooser (app->window.self,
+	native = create_file_chooser (app->window.self,
 			GTK_FILE_CHOOSER_ACTION_OPEN,
 			title, _("Torrent file (*.torrent)"), "application/x-bittorrent");
 	g_free (title);
-	g_signal_connect (dialog, "response",
+	g_signal_connect (native, "response",
 			G_CALLBACK (on_create_torrent_response), app);
-	gtk_widget_show (dialog);
+	res = gtk_native_dialog_run (GTK_NATIVE_DIALOG (native));
 }
 
 void  ugtk_app_create_metalink (UgtkApp* app)
 {
 	GtkFileFilter*  filter;
-	GtkWidget*      dialog;
+	GtkWidget*      native;
 	gchar*          title;
+	gint            res;
 
 	title = g_strconcat (UGTK_APP_NAME " - ", _("Open Metalink file"), NULL);
-	dialog = create_file_chooser (app->window.self,
+	native = create_file_chooser (app->window.self,
 			GTK_FILE_CHOOSER_ACTION_OPEN,
 			title, NULL, NULL);
 	g_free (title);
@@ -1362,51 +1362,51 @@ void  ugtk_app_create_metalink (UgtkApp* app)
 	gtk_file_filter_add_pattern (filter, "*.meta4");
 //	gtk_file_filter_add_mime_type (filter, "application/metalink+xml");
 //	gtk_file_filter_add_mime_type (filter, "application/metalink4+xml");
-	gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (dialog), filter);
-	g_signal_connect (dialog, "response",
+	gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (native), filter);
+	g_signal_connect (native, "response",
 			G_CALLBACK (on_create_metalink_response), app);
-	gtk_widget_show (dialog);
+	res = gtk_native_dialog_run (GTK_NATIVE_DIALOG (native));
 }
 
 // ------------------------------------
 // import/export
 
-static void  on_save_category_response (GtkWidget* dialog, gint response, UgtkApp* app)
+static void  on_save_category_response (GtkWidget* native, gint response, UgtkApp* app)
 {
 	UgetNode* cnode;
 	gchar*    file;
 
 	gtk_widget_set_sensitive ((GtkWidget*) app->window.self, TRUE);
-	if (response != GTK_RESPONSE_OK) {
-		gtk_widget_destroy (dialog);
+	if (response != GTK_RESPONSE_ACCEPT) {
+		g_object_unref (native);
 		return;
 	}
 	if (app->traveler.category.cursor.pos == 0)
 		return;
 
 	// get filename
-	file = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
-//	file = gtk_file_chooser_get_uri (GTK_FILE_CHOOSER (dialog));
-	gtk_widget_destroy (dialog);
+	file = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (native));
+//	file = gtk_file_chooser_get_uri (GTK_FILE_CHOOSER (native));
+	g_object_unref (native);
 	cnode = app->traveler.category.cursor.node;
 	if (uget_app_save_category ((UgetApp*) app, cnode->base, file, NULL) == FALSE)
 		ugtk_app_show_message (app, GTK_MESSAGE_ERROR, _("Failed to save category file."));
 	g_free (file);
 }
 
-static void  on_load_category_response (GtkWidget* dialog, gint response, UgtkApp* app)
+static void  on_load_category_response (GtkWidget* native, gint response, UgtkApp* app)
 {
 	gchar*  file;
 
 	gtk_widget_set_sensitive ((GtkWidget*) app->window.self, TRUE);
-	if (response != GTK_RESPONSE_OK) {
-		gtk_widget_destroy (dialog);
+	if (response != GTK_RESPONSE_ACCEPT) {
+		g_object_unref (native);
 		return;
 	}
 	// get filename
-	file = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
-//	file = gtk_file_chooser_get_uri (GTK_FILE_CHOOSER (dialog));
-	gtk_widget_destroy (dialog);
+	file = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (native));
+//	file = gtk_file_chooser_get_uri (GTK_FILE_CHOOSER (native));
+	g_object_unref (native);
 	if (uget_app_load_category ((UgetApp*) app, file, NULL))
 		ugtk_menubar_sync_category (&app->menubar, app, TRUE);
 	else
@@ -1416,41 +1416,43 @@ static void  on_load_category_response (GtkWidget* dialog, gint response, UgtkAp
 
 void  ugtk_app_save_category (UgtkApp* app)
 {
-	GtkWidget*      dialog;
-	gchar*          title;
+	GtkFileChooserNative*  native;
+	gchar*                 title;
+	gint                   res;
 
 	gtk_widget_set_sensitive ((GtkWidget*) app->window.self, FALSE);
 
 	title = g_strconcat (UGTK_APP_NAME " - ", _("Save Category file"), NULL);
-	dialog = create_file_chooser (app->window.self,
+	native = create_file_chooser (app->window.self,
 			GTK_FILE_CHOOSER_ACTION_SAVE,
 			title, NULL, NULL);
 	g_free (title);
 
-	g_signal_connect (dialog, "response",
+	g_signal_connect (native, "response",
 			G_CALLBACK (on_save_category_response), app);
-	gtk_widget_show (dialog);
+	res = gtk_native_dialog_run (GTK_NATIVE_DIALOG (native));
 }
 
 void  ugtk_app_load_category (UgtkApp* app)
 {
-	GtkWidget*      dialog;
-	gchar*          title;
+	GtkFileChooserNative*	native;
+	gchar*			title;
+	gint			res;
 
 	gtk_widget_set_sensitive ((GtkWidget*) app->window.self, FALSE);
 
 	title = g_strconcat (UGTK_APP_NAME " - ", _("Open Category file"), NULL);
-	dialog = create_file_chooser (app->window.self,
+	native = create_file_chooser (app->window.self,
 			GTK_FILE_CHOOSER_ACTION_OPEN,
 			title, _("JSON file (*.json)"), "application/json");
 	g_free (title);
 
-	g_signal_connect (dialog, "response",
+	g_signal_connect (native, "response",
 			G_CALLBACK (on_load_category_response), app);
-	gtk_widget_show (dialog);
+	res = gtk_native_dialog_run (GTK_NATIVE_DIALOG (native));
 }
 
-static void  on_import_html_file_response (GtkWidget* dialog, gint response, UgtkApp* app)
+static void  on_import_html_file_response (GtkWidget* native, gint response, UgtkApp* app)
 {
 	UgHtmlFilter*     filter;
 	UgHtmlFilterTag*  tag_a;
@@ -1461,13 +1463,13 @@ static void  on_import_html_file_response (GtkWidget* dialog, gint response, Ugt
 	gchar*  string;
 	gchar*  file;
 
-	if (response != GTK_RESPONSE_OK ) {
-		gtk_widget_destroy (dialog);
+	if (response != GTK_RESPONSE_ACCEPT ) {
+		g_object_unref (native);
 		return;
 	}
 	// read URLs from html file
-	string = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
-	gtk_widget_destroy (dialog);
+	string = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (native));
+	g_object_unref (native);
 	file = g_filename_to_utf8 (string, -1, NULL, NULL, NULL);
 	g_free (string);
 	string = NULL;
@@ -1484,7 +1486,7 @@ static void  on_import_html_file_response (GtkWidget* dialog, gint response, Ugt
 	ug_html_filter_free (filter);
 	// UgtkBatchDialog
 	bdialog = ugtk_batch_dialog_new (
-			gtk_window_get_title ((GtkWindow*) dialog), app);
+			gtk_window_get_title ((GtkWindow*) native), app);
 	ugtk_download_form_set_folders (&bdialog->download, &app->setting);
 	ugtk_batch_dialog_use_selector (bdialog);
 	// category
@@ -1511,7 +1513,7 @@ static void  on_import_html_file_response (GtkWidget* dialog, gint response, Ugt
 	ugtk_batch_dialog_run (bdialog);
 }
 
-static void  on_import_text_file_response (GtkWidget* dialog, gint response, UgtkApp* app)
+static void  on_import_text_file_response (GtkWidget* native, gint response, UgtkApp* app)
 {
 	UgtkBatchDialog*   bdialog;
 	UgtkSelectorPage*  page;
@@ -1521,13 +1523,13 @@ static void  on_import_text_file_response (GtkWidget* dialog, gint response, Ugt
 	GList*    list;
 	GError*   error = NULL;
 
-	if (response != GTK_RESPONSE_OK ) {
-		gtk_widget_destroy (dialog);
+	if (response != GTK_RESPONSE_ACCEPT ) {
+		g_object_unref (native);
 		return;
 	}
 	// read URLs from text file
-	string = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
-	gtk_widget_destroy (dialog);
+	string = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (native));
+	g_object_unref (native);
 	file = g_filename_to_utf8 (string, -1, NULL, NULL, NULL);
 	g_free (string);
 	list = ugtk_text_file_get_uris (file, &error);
@@ -1539,7 +1541,7 @@ static void  on_import_text_file_response (GtkWidget* dialog, gint response, Ugt
 	}
 	// UgtkBatchDialog
 	bdialog = ugtk_batch_dialog_new (
-			gtk_window_get_title ((GtkWindow*) dialog), app);
+			gtk_window_get_title ((GtkWindow*) native), app);
 	ugtk_batch_dialog_use_selector (bdialog);
 	ugtk_download_form_set_folders (&bdialog->download, &app->setting);
 	// category
@@ -1556,20 +1558,20 @@ static void  on_import_text_file_response (GtkWidget* dialog, gint response, Ugt
 	ugtk_batch_dialog_run (bdialog);
 }
 
-static void  on_export_text_file_response (GtkWidget* dialog, gint response, UgtkApp* app)
+static void  on_export_text_file_response (GtkWidget* native, gint response, UgtkApp* app)
 {
 	GIOChannel*  channel;
 	UgetCommon*  common;
 	UgetNode*    node;
 	gchar*       fname;
 
-	if (response != GTK_RESPONSE_OK ) {
-		gtk_widget_destroy (dialog);
+	if (response != GTK_RESPONSE_ACCEPT ) {
+		g_object_unref (native);
 		return;
 	}
 	// write all URLs to text file
-	fname = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
-	gtk_widget_destroy (dialog);
+	fname = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (native));
+	g_object_unref (native);
 	channel = g_io_channel_new_file (fname, "w", NULL);
 	g_free (fname);
 
@@ -1592,47 +1594,50 @@ static void  on_export_text_file_response (GtkWidget* dialog, gint response, Ugt
 
 void  ugtk_app_import_html_file (UgtkApp* app)
 {
-	GtkWidget*  dialog;
+	GtkWidget*  native;
 	gchar*      title;
+	gint        res;
 
 	title = g_strconcat (UGTK_APP_NAME " - ", _("Import URLs from HTML file"), NULL);
-	dialog = create_file_chooser (app->window.self,
+	native = create_file_chooser (app->window.self,
 			GTK_FILE_CHOOSER_ACTION_OPEN,
 			title, _("HTML file (*.htm, *.html)"), "text/html");
 	g_free (title);
-	g_signal_connect (dialog, "response",
+	g_signal_connect (native, "response",
 			G_CALLBACK (on_import_html_file_response), app);
-	gtk_widget_show (dialog);
+	res = gtk_native_dialog_run (GTK_NATIVE_DIALOG (native));
 }
 
 void  ugtk_app_import_text_file (UgtkApp* app)
 {
-	GtkWidget*  dialog;
+	GtkWidget*  native;
 	gchar*      title;
+	gint        res;
 
 	title = g_strconcat (UGTK_APP_NAME " - ", _("Import URLs from text file"), NULL);
-	dialog = create_file_chooser (app->window.self,
+	native = create_file_chooser (app->window.self,
 			GTK_FILE_CHOOSER_ACTION_OPEN,
 			title, _("Plain text file"), "text/plain");
 	g_free (title);
-	g_signal_connect (dialog, "response",
+	g_signal_connect (native, "response",
 			G_CALLBACK (on_import_text_file_response), app);
-	gtk_widget_show (dialog);
+	res = gtk_native_dialog_run (GTK_NATIVE_DIALOG (native));
 }
 
 void  ugtk_app_export_text_file (UgtkApp* app)
 {
-	GtkWidget*  dialog;
+	GtkWidget*  native;
 	gchar*      title;
+	gint        res;
 
 	title = g_strconcat (UGTK_APP_NAME " - ", _("Export URLs to text file"), NULL);
-	dialog = create_file_chooser (app->window.self,
+	native = create_file_chooser (app->window.self,
 			GTK_FILE_CHOOSER_ACTION_SAVE,
 			title, NULL, NULL);
 	g_free (title);
-	g_signal_connect (dialog, "response",
+	g_signal_connect (native, "response",
 			G_CALLBACK (on_export_text_file_response), app);
-	gtk_widget_show (dialog);
+	res = gtk_native_dialog_run (GTK_NATIVE_DIALOG (native));
 }
 
 // ------------------------------------

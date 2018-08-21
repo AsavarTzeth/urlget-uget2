@@ -40,7 +40,7 @@ AM_GLIB_DEFINE_LOCALEDIR(LOCALEDIR)
 
 ## ----------------------------------------------
 ## GTK+
-PKG_CHECK_MODULES(GTK, gtk+-3.0 >= 3.4)
+PKG_CHECK_MODULES(GTK, gtk+-3.0 >= 3.20)
 
 ## ----------------
 ## glib (add HAVE_GLIB definition to config.h)

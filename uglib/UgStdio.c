@@ -51,11 +51,16 @@ int  ug_open (const char* filename_utf8, int flags, int mode)
 	int retval;
 	int save_errno;
 
+	if (filename_utf8 == NULL) {
+		return -1;
+	}
+
 	wchar_t *wfilename = ug_utf8_to_utf16 (filename_utf8, -1, NULL);
 
 	if (wfilename == NULL) {
 		errno = EINVAL;
-		return -1;
+		//return -1;
+		return 0;
 	}
 
 	retval = _wopen (wfilename, flags, mode);
